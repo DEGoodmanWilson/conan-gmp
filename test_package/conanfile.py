@@ -8,7 +8,8 @@ default_user = "DEGoodmanWilson"
 default_channel = "testing"
 #########################################################
 
-channel = os.getenv("CONAN_CHANNEL", default_channel)
+version_lib  = "6.1.2"
+channel  = os.getenv("CONAN_CHANNEL", default_channel)
 username = os.getenv("CONAN_USERNAME", default_user)
 
 
@@ -17,16 +18,18 @@ class DefaultNameConan(ConanFile):
     version = "0.1"
     settings = "os", "compiler", "arch", "build_type"
     generators = "cmake"
-    requires = "gmp/6.1.1@%s/%s" % (username, channel)
+    requires = "gmp/%s@%s/%s" % (version_lib, username, channel)
 
     def build(self):
-        cmake = CMake(self.settings)
-        self.run('cmake . %s' % cmake.command_line)
-        self.run("cmake --build . %s" % cmake.build_config)
+        self.build_dir = os.path.abspath(".")
+
+        cmake = CMake(self)
+        self.run('cmake "%s" %s' % (self.conanfile_directory, cmake.command_line))
+        self.run('cmake --build . %s' % cmake.build_config)
 
     def imports(self):
         self.copy(pattern="*.dll", dst="bin", src="bin")
         self.copy(pattern="*.dylib", dst="bin", src="lib")
         
     def test(self):
-        self.run(".%sbin%sexample" % (os.sep, os.sep))
+        self.run('"%s" 10' % os.path.join(self.build_dir, "bin", "example"))
