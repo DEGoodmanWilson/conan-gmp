@@ -11,6 +11,7 @@ class GmpConan(ConanFile):
     url = "http://github.com/DEGoodmanWilson/conan-gmp"
     ZIP_FOLDER_NAME = "gmp-%s" % version
     settings =  "os", "compiler", "arch"
+    license = "LGPLv3 or GPLv2"
     options = {
         "shared": [True, False],
         "disable_assembly": [True, False],
@@ -36,9 +37,7 @@ class GmpConan(ConanFile):
 
     def source(self):
         zip_name = "gmp-%s.tar.bz2" % self.version
-        download("http://gnu.uberglobalmirror.com/gmp/%s" % zip_name, zip_name)
-# gmplib.org is down :(
-#        download("http://gmplib.org/download/gmp/%s" % zip_name, zip_name)
+        download("http://gmplib.org/download/gmp/%s" % zip_name, zip_name)
         tools.check_sha256(zip_name, self.SHA256)
         unzip(zip_name)
         os.unlink(zip_name)

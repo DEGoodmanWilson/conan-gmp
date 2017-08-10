@@ -20,6 +20,8 @@ class DefaultNameConan(ConanFile):
     generators = "cmake"
     requires = "gmp/%s@%s/%s" % (version_lib, username, channel)
 
+    build_requires = "cmake_installer/0.1@lasote/stable"
+
     def build(self):
         self.build_dir = os.path.abspath(".")
 
