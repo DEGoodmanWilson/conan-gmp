@@ -1,15 +1,18 @@
-from conans import ConanFile
-import os, shutil
-from conans.tools import download, unzip, replace_in_file, check_md5
-from conans import CMake
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from conans import ConanFile, AutoToolsBuildEnvironment, tools
+import os
+
 
 class GmpConan(ConanFile):
     name = "gmp"
     version = "6.1.1"
     url = "http://github.com/DEGoodmanWilson/conan-gmp"
-    ZIP_FOLDER_NAME = "gmp-%s" % version
-    generators = "cmake"
-    settings =  "os", "compiler", "arch", "build_type"
+    description = "The GNU bignum library"
+    license = "https://gmplib.org/manual/Copying.html#Copying"
+    exports_sources = ["CMakeLists.txt"]
+    settings = "os", "arch", "compiler", "build_type"
     options = {"shared": [True, False],
                "disable_assembly": [True, False],
                "enable_fat": [True, False],
@@ -20,69 +23,39 @@ class GmpConan(ConanFile):
                       "enable_cxx=True", "disable-fft=False", "enable-assert=False"
 
     def source(self):
-        zip_name = "gmp-%s.tar.bz2" % self.version
-        download("http://gnu.uberglobalmirror.com/gmp/%s" % zip_name, zip_name)
-# gmplib.org is down :(
-#        download("http://gmplib.org/download/gmp/%s" % zip_name, zip_name)
-        check_md5(zip_name, "4c175f86e11eb32d8bf9872ca3a8e11d")
-        unzip(zip_name)
-        os.unlink(zip_name)
+        source_url = "http://gnu.uberglobalmirror.com/gmp"
+        tools.get("{0}/gmp-{1}.tar.bz2".format(source_url, self.version))
+        extracted_dir = self.name + "-" + self.version
+        os.rename(extracted_dir, "sources")
 
-    def config(self):
-        pass
-        # del self.settings.compiler.libcxx
-
-    def generic_env_configure_vars(self, verbose=False):
-        """Reusable in any lib with configure!!"""
-        if self.settings.os == "Linux" or self.settings.os == "Macos":
-            libs = 'LIBS="%s"' % " ".join(["-l%s" % lib for lib in self.deps_cpp_info.libs])
-            ldflags = 'LDFLAGS="%s"' % " ".join(["-L%s" % lib for lib in self.deps_cpp_info.lib_paths])
-            archflag = "-m32" if self.settings.arch == "x86" else ""
-            cflags = 'CFLAGS="-fPIC %s %s"' % (archflag, " ".join(self.deps_cpp_info.cflags))
-            cpp_flags = 'CPPFLAGS="%s %s"' % (archflag, " ".join(self.deps_cpp_info.cppflags))
-            command = "env %s %s %s %s" % (libs, ldflags, cflags, cpp_flags)
-        elif self.settings.os == "Windows" and self.settings.compiler == "Visual Studio":
-            cl_args = " ".join(['/I"%s"' % lib for lib in self.deps_cpp_info.include_paths])
-            lib_paths= ";".join(['"%s"' % lib for lib in self.deps_cpp_info.lib_paths])
-            command = "SET LIB=%s;%%LIB%% && SET CL=%s" % (lib_paths, cl_args)
-            if verbose:
-                command += " && SET LINK=/VERBOSE"
-
-        return command
-
-
-       
     def build(self):
-        config_options_string = ""
+        with tools.chdir("sources"):
+            env_build = AutoToolsBuildEnvironment(self)
+            env_build.fpic = True
 
-        for option_name in self.options.values.fields:
-            activated = getattr(self.options, option_name)
-            if activated:
-                self.output.info("Activated option! %s" % option_name)
-                config_options_string += " --%s" % option_name.replace("_", "-")
+            config_args = []
+            for option_name in self.options.values.fields:
+                activated = getattr(self.options, option_name)
+                if activated:
+                    self.output.info("Activated option! %s" % option_name)
+                    config_args.append("--%s" % option_name.replace("_", "-"))
 
-        self.output.warn("*** Detected OS: %s" % (self.settings.os))
 
-        if self.settings.os == "Macos":
-            config_options_string += " --with-pic"
-
-        configure_command = "cd %s && %s ./configure --enable-static --enable-shared %s" % (self.ZIP_FOLDER_NAME, self.generic_env_configure_vars(), config_options_string)
-        self.output.warn(configure_command)
-        self.run(configure_command)
-        self.run("cd %s && make" % self.ZIP_FOLDER_NAME)
+            env_build.configure(args=config_args)
+            env_build.make()
        
-
     def package(self):
-        self.copy("*.h", "include", "%s" % (self.ZIP_FOLDER_NAME), keep_path=True)
-        if self.options.shared:
-            self.copy(pattern="*.so*", dst="lib", src=self.ZIP_FOLDER_NAME, keep_path=False)
-            self.copy(pattern="*.dll*", dst="bin", src=self.ZIP_FOLDER_NAME, keep_path=False)
-        else:
-            self.copy(pattern="*.a", dst="lib", src="%s" % self.ZIP_FOLDER_NAME, keep_path=False)
+        with tools.chdir("sources"):
+            self.copy(pattern="LICENSE")
+            self.copy(pattern="*", dst="include", src="include")
+            self.copy(pattern="*.dll", dst="bin", src="bin", keep_path=False)
+            self.copy(pattern="*.lib", dst="lib", src="lib", keep_path=False)
+            self.copy(pattern="*.a", dst="lib", src="lib", keep_path=False)
+            self.copy(pattern="*.so*", dst="lib", src="lib", keep_path=False)
+            self.copy(pattern="*.dylib", dst="lib", src="lib", keep_path=False)
 
-        self.copy(pattern="*.lib", dst="lib", src="%s" % self.ZIP_FOLDER_NAME, keep_path=False)
         
     def package_info(self):
-        self.cpp_info.libs = ['gmp']
+        self.cpp_info.libs = tools.collect_libs(self)
 
 
