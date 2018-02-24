@@ -14,13 +14,13 @@ class GmpConan(ConanFile):
     exports_sources = ["CMakeLists.txt"]
     settings = "os", "arch", "compiler", "build_type"
     options = {"shared": [True, False],
-               "disable_assembly": [True, False],
-               "enable_fat": [True, False],
-               "enable_cxx": [True, False],
+               "disable-assembly": [True, False],
+               "enable-fat": [True, False],
+               "enable-cxx": [True, False],
                "disable-fft": [True, False],
                "enable-assert": [True, False]}
-    default_options = "shared=False", "disable_assembly=False", "enable_fat=False", \
-                      "enable_cxx=True", "disable-fft=False", "enable-assert=False"
+    default_options = "shared=False", "disable-assembly=False", "enable-fat=False", \
+                      "enable-cxx=True", "disable-fft=False", "enable-assert=False"
 
     def source(self):
         source_url = "http://gnu.uberglobalmirror.com/gmp"
@@ -35,10 +35,16 @@ class GmpConan(ConanFile):
 
             config_args = []
             for option_name in self.options.values.fields:
-                activated = getattr(self.options, option_name)
-                if activated:
-                    self.output.info("Activated option! %s" % option_name)
-                    config_args.append("--%s" % option_name.replace("_", "-"))
+                if(option_name == "shared"):
+                    if(getattr(self.options, "shared")):
+                        config_args.append("--enable-shared")
+                    else:
+                        config_args.append("--enable-static")
+                else:
+                    activated = getattr(self.options, option_name)
+                    if activated:
+                        self.output.info("Activated option! %s" % option_name)
+                        config_args.append("--%s" % option_name)
 
 
             env_build.configure(args=config_args)
