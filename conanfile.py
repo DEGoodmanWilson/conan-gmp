@@ -29,6 +29,10 @@ class GmpConan(ConanFile):
         os.rename(extracted_dir, "sources")
 
     def build(self):
+        if self.settings.compiler == 'Visual Studio':
+            # self.build_vs()
+            self.output.fatal("No windows support yet. Sorry. Help a fellow out and contribute back?")
+
         with tools.chdir("sources"):
             env_build = AutoToolsBuildEnvironment(self)
             env_build.fpic = True
