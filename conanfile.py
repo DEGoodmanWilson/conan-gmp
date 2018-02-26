@@ -42,8 +42,10 @@ class GmpConan(ConanFile):
                 if(option_name == "shared"):
                     if(getattr(self.options, "shared")):
                         config_args.append("--enable-shared")
+                        config_args.append("--disable-static")
                     else:
                         config_args.append("--enable-static")
+                        config_args.append("--disable-shared")
                 else:
                     activated = getattr(self.options, option_name)
                     if activated:
