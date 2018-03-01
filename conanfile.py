@@ -52,7 +52,8 @@ class GmpConan(ConanFile):
                         self.output.info("Activated option! %s" % option_name)
                         config_args.append("--%s" % option_name)
 
-
+            config_args.append("--with-pic")
+            
             env_build.configure(args=config_args)
             env_build.make()
        
