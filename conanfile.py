@@ -53,6 +53,7 @@ class GmpConan(ConanFile):
                         config_args.append("--%s" % option_name)
 
             config_args.append("--with-pic")
+            config_args.append("--enable-silent-rules")
             
             env_build.configure(args=config_args)
             env_build.make()
